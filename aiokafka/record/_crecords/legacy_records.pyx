@@ -8,19 +8,13 @@ from aiokafka.codec import (
 from aiokafka.errors import CorruptRecordException, UnsupportedCodecError
 from zlib import crc32 as py_crc32  # needed for windows macro
 
-from cpython cimport PyObject_GetBuffer, PyBuffer_Release, PyBUF_WRITABLE, \
-                     PyBUF_SIMPLE, PyBUF_READ, Py_buffer, \
-                     PyBytes_FromStringAndSize
+from cpython cimport PyObject_GetBuffer, PyBuffer_Release, PyBUF_SIMPLE, \
+                     Py_buffer, PyBytes_FromStringAndSize
 from libc.stdint cimport int32_t, int64_t, uint32_t
 from libc.string cimport memcpy
 cimport cython
-cdef extern from "Python.h":
-    ssize_t PyByteArray_GET_SIZE(object)
-    char* PyByteArray_AS_STRING(bytearray ba)
-    int PyByteArray_Resize(object, ssize_t) except -1
-
-    object PyMemoryView_FromMemory(char *mem, ssize_t size, int flags)
-
+from cpython.bytearray cimport PyByteArray_Size, PyByteArray_AsString, \
+                               PyByteArray_Resize
 
 # This should be before _cutil to generate include for `winsock2.h` before
 # `windows.h`
@@ -388,7 +382,7 @@ cdef class LegacyRecordBatchBuilder:
             ts = timestamp
 
         # Check if we have room for another message
-        pos = PyByteArray_GET_SIZE(self._buffer)
+        pos = PyByteArray_Size(self._buffer)
         size = _size_in_bytes(self._magic, key, value)
         # We always allow at least one record to be appended
         if offset != 0 and pos + size >= self._batch_size:
@@ -398,7 +392,7 @@ cdef class LegacyRecordBatchBuilder:
         PyByteArray_Resize(self._buffer, pos + size)
 
         # Encode message
-        buf = PyByteArray_AS_STRING(self._buffer)
+        buf = PyByteArray_AsString(self._buffer)
         _encode_msg(
             self._magic, pos, buf,
             offset, ts, key, value, 0, &crc)
@@ -409,7 +403,7 @@ cdef class LegacyRecordBatchBuilder:
     def size(self):
         """ Return current size of data written to buffer
         """
-        return PyByteArray_GET_SIZE(self._buffer)
+        return PyByteArray_Size(self._buffer)
 
     # Size calculations. Just copied Java's implementation
 
@@ -452,7 +446,7 @@ cdef class LegacyRecordBatchBuilder:
             # We will just write the result into the same memory space.
             PyByteArray_Resize(self._buffer, size)
 
-            buf = PyByteArray_AS_STRING(self._buffer)
+            buf = PyByteArray_AsString(self._buffer)
             _encode_msg(
                 self._magic, start_pos=0, buf=buf,
                 offset=0, timestamp=0, key=None, value=compressed,
