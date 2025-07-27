@@ -62,18 +62,13 @@ from aiokafka.codec import (
 )
 from aiokafka.errors import CorruptRecordException, UnsupportedCodecError
 
-from cpython cimport PyObject_GetBuffer, PyBuffer_Release, PyBUF_WRITABLE, \
-                     PyBUF_SIMPLE, PyBUF_READ, Py_buffer, \
-                     PyBytes_FromStringAndSize
+from cpython cimport PyObject_GetBuffer, PyBuffer_Release, PyBUF_SIMPLE, \
+                     PyBUF_READ, Py_buffer, PyBytes_FromStringAndSize
 from libc.stdint cimport int32_t, int64_t, uint32_t, int16_t
 from libc.string cimport memcpy
 cimport cython
-cdef extern from "Python.h":
-    ssize_t PyByteArray_GET_SIZE(object)
-    char* PyByteArray_AS_STRING(bytearray ba)
-    int PyByteArray_Resize(object, ssize_t) except -1
-
-    object PyMemoryView_FromMemory(char *mem, ssize_t size, int flags)
+from cpython.bytearray cimport PyByteArray_AsString, PyByteArray_Resize
+from cpython.memoryview cimport PyMemoryView_FromMemory
 
 # This should be before _cutil to generate include for `winsock2.h` before
 # `windows.h`
@@ -547,7 +542,7 @@ cdef class DefaultRecordBatchBuilder:
         PyByteArray_Resize(self._buffer, pos + size)
 
         # Encode message
-        buf = PyByteArray_AS_STRING(self._buffer)
+        buf = PyByteArray_AsString(self._buffer)
         self._encode_msg(pos, buf, offset, ts, msg_size, key, value, headers)
         self._pos = pos + size
 
@@ -636,7 +631,7 @@ cdef class DefaultRecordBatchBuilder:
             char *buf
             uint32_t crc = 0
 
-        buf = PyByteArray_AS_STRING(self._buffer)
+        buf = PyByteArray_AsString(self._buffer)
         # Proper BaseOffset will be set by broker
         hton.pack_int64(&buf[BASE_OFFSET_OFFSET], 0)
         # Size from here to end

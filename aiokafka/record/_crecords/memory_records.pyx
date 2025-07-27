@@ -25,12 +25,7 @@ from aiokafka.errors import CorruptRecordException
 from .default_records cimport DefaultRecordBatch
 from .legacy_records cimport LegacyRecordBatch
 from . cimport hton
-from cpython cimport PyBytes_GET_SIZE, PyBytes_AS_STRING, Py_buffer,\
-    PyObject_GetBuffer, PyBuffer_Release, PyBUF_SIMPLE
-
-cdef extern from "Python.h":
-    object PyMemoryView_FromObject(object obj)
-    Py_buffer* PyMemoryView_GET_BUFFER(object mview)
+from cpython cimport PyBytes_Size, PyBytes_AsString
 
 
 DEF LENGTH_OFFSET = 8
@@ -50,7 +45,7 @@ cdef class MemoryRecords:
         self._pos = 0
 
     def size_in_bytes(self):
-        return PyBytes_GET_SIZE(self._buffer)
+        return PyBytes_Size(self._buffer)
 
     cdef object _get_next(self):
         cdef:
@@ -61,8 +56,8 @@ cdef class MemoryRecords:
             Py_ssize_t slice_end
             char magic
 
-        buffer_len = PyBytes_GET_SIZE(self._buffer)
-        buf = PyBytes_AS_STRING(self._buffer)
+        buffer_len = PyBytes_Size(self._buffer)
+        buf = PyBytes_AsString(self._buffer)
 
         remaining = buffer_len - pos
         if remaining < LOG_OVERHEAD:
@@ -93,11 +88,11 @@ cdef class MemoryRecords:
             Py_ssize_t buffer_len
             Py_ssize_t length
 
-        buffer_len = PyBytes_GET_SIZE(self._buffer)
+        buffer_len = PyBytes_Size(self._buffer)
         if buffer_len - self._pos < LOG_OVERHEAD:
             return False
 
-        buf = PyBytes_AS_STRING(self._buffer)
+        buf = PyBytes_AsString(self._buffer)
         length = <Py_ssize_t> hton.unpack_int32(
             &buf[self._pos + LENGTH_OFFSET])
         if buffer_len - self._pos < LOG_OVERHEAD + length:

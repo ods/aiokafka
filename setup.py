@@ -19,37 +19,39 @@ else:
     LIBRARIES.append("z")
 
 
-extensions = [
-    Extension(
-        "aiokafka.record._crecords.legacy_records",
-        ["aiokafka/record/_crecords/legacy_records.pyx"],
+def _extension(name: str, sources: list[str]) -> Extension:
+    return Extension(
+        name,
+        sources,
         libraries=LIBRARIES,
         extra_compile_args=CFLAGS,
         extra_link_args=LDFLAGS,
+        define_macros=[
+            ("Py_LIMITED_API", "0x030B0000"),
+        ],
+        py_limited_api=True
+    )
+
+
+extensions = [
+    _extension(
+        "aiokafka.record._crecords.legacy_records",
+        ["aiokafka/record/_crecords/legacy_records.pyx"],
     ),
-    Extension(
+    _extension(
         "aiokafka.record._crecords.default_records",
         [
             "aiokafka/record/_crecords/crc32c.c",
             "aiokafka/record/_crecords/default_records.pyx",
         ],
-        libraries=LIBRARIES,
-        extra_compile_args=CFLAGS,
-        extra_link_args=LDFLAGS,
     ),
-    Extension(
+    _extension(
         "aiokafka.record._crecords.memory_records",
         ["aiokafka/record/_crecords/memory_records.pyx"],
-        libraries=LIBRARIES,
-        extra_compile_args=CFLAGS,
-        extra_link_args=LDFLAGS,
     ),
-    Extension(
+    _extension(
         "aiokafka.record._crecords.cutil",
         ["aiokafka/record/_crecords/crc32c.c", "aiokafka/record/_crecords/cutil.pyx"],
-        libraries=LIBRARIES,
-        extra_compile_args=CFLAGS,
-        extra_link_args=LDFLAGS,
     ),
 ]
 
@@ -84,4 +86,5 @@ class ve_build_ext(build_ext):
 setup(
     ext_modules=cythonize(extensions),
     cmdclass={"build_ext": ve_build_ext, "bdist_rpm": bdist_rpm},
+    options={"bdist_wheel": {"py_limited_api": "cp311"}},
 )

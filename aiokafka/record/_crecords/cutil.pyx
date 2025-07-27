@@ -1,5 +1,6 @@
 #cython: language_level=3
 from aiokafka.errors import CorruptRecordException
+from cpython cimport PyBytes_AsString
 
 # VarInt implementation
 
@@ -114,7 +115,7 @@ def encode_varint_cython(int64_t value, write):
         char* buf
 
     x = bytes(10)  # Max for 64 bits is 10 bytes encoded
-    buf = PyBytes_AS_STRING(x)
+    buf = PyBytes_AsString(x)
 
     encode_varint64(buf, &pos, value)
 
