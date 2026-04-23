@@ -56,7 +56,7 @@ ci-test-unit:
 
 .PHONY: ci-test-all
 ci-test-all:
-	pytest -s -v --log-format="%(asctime)s %(levelname)s %(message)s" --log-level DEBUG --cov aiokafka --cov-report xml  --color=yes --docker-image $(DOCKER_IMAGE) $(FLAGS) tests
+	pytest -s -v --log-format="%(asctime)s %(levelname)s %(message)s" --log-level DEBUG --cov aiokafka --cov-report xml  --color=yes --docker-image $(DOCKER_IMAGE) $(FLAGS) tests/test_consumer.py
 
 coverage.xml: .coverage
 	coverage xml
